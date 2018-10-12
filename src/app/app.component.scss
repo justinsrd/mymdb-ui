@@ -1,0 +1,31 @@
+/deep/ {
+    .font-weight-bold {
+        font-weight: bold !important;
+    }
+
+    .highcharts-tooltip {
+        opacity: 1;
+    }
+
+    .tooltip-container {
+        .episode-title {
+            color: #e62032;
+        }
+        .episode-number {
+
+        }
+        .episode-rating {
+            .value {
+                color: #e62032;
+            }
+        }
+        .episode-votes {
+
+        }
+    }
+
+    .highcharts-tooltip-box {
+        fill: #efefef;
+        stroke: none;
+    }
+}
