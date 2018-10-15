@@ -9,8 +9,9 @@ import {MyServiceService} from './my-service.service';
     providers: [MyServiceService]
 })
 export class AppComponent {
-    public title: string = 'firefly';
+    public title: string = 'Community';
     private currentSeasons: number;
+    private zoomYAxis: boolean = false;
     public chart: any = new Chart({
         chart: {
             type: 'scatter',
@@ -22,13 +23,15 @@ export class AppComponent {
             tickWidth: 0
         },
         yAxis: {
-            gridLineColor: '#424242'
+            gridLineColor: '#424242',
+            min: 0,
+            max: 10
         },
         legend: {
             enabled: false
         },
         title: {
-            text: 'WHAT',
+            text: '',
             style: {
                 color: '#fff'
             }
@@ -40,19 +43,6 @@ export class AppComponent {
         tooltip: {
             useHTML: true,
             formatter: function() {
-                console.log(this);
-                /**
-                     "episode": 1,
-                     "episode_id": "tt0579539",
-                     "episode_title": "The Train Job",
-                     "id": 16531891,
-                     "imdb_id": "tt0303461",
-                     "name": "Firefly",
-                     "rating": 8.5,
-                     "season": 1,
-                     "show_id": "tt0303461",
-                     "votes": 3656
-                 */
                 const episode = this.point.episode;
                 return `
                     <div class="tooltip-container">
@@ -71,10 +61,6 @@ export class AppComponent {
     }
 
     findColor(index: number) {
-        // season 6, of 8 seasons
-
-
-        // season 13, of 30 seasons
         const colors = ['#7ed1f0', '#f1ef85', '#cb78ed', '#7ff2ad', '#ef857c', '#7b8eed', '#b5f284', '#f079d3', '#80f2ea'];
         while (index > colors.length) {
             index -= colors.length;
@@ -90,97 +76,64 @@ export class AppComponent {
         return str;
     }
 
+    switchy() {
+        this.zoomYAxis = !this.zoomYAxis;
+        if (this.zoomYAxis) {
+            // const min = Math.max(Math.floor(this.chart.ref.yAxis[0].dataMin)-1, 0);
+            // const max = Math.min(Math.ceil(this.chart.ref.yAxis[0].dataMax)+1, 10);
+            // const min = Math.floor(this.chart.ref.yAxis[0].dataMin);
+            // const max = Math.ceil(this.chart.ref.yAxis[0].dataMax);
+            const min = this.chart.ref.yAxis[0].dataMin - .1;
+            const max = this.chart.ref.yAxis[0].dataMax + .1;
+            this.chart.ref.yAxis[0].setExtremes(min, max, true, true);
+        } else {
+            this.chart.ref.yAxis[0].setExtremes(0, 10);
+        }
+    }
+
 
     fetchStuff() {
         const self = this;
-        console.log('str2', this.title);
-        const colors = ['#2f7ed8', '#0d233a', '#8bbc21', '#910000', '#1aadce', '#492970', '#f28f43', '#77a1e5', '#c42525', '#a6c96a'];
-
         if (this.title) {
             this.myServiceService.getData(this.title).subscribe((res: any) => {
-                console.log('res', res);
-                // const data = res.map((episode: any) => {
-                //     return episode.rating;
-                // });
-                console.log('this chart', self.chart);
-
-                for (let i = self.currentSeasons; i >= 0; i--) {
-                    console.log('removed', i);
-                    self.chart.removeSerie(i);
-                }
-
-                if (res.length) {
-                    self.chart.ref.setTitle({text: res[0].name});
-                }
-
-
-                // self.chart.removeSerie(0);
-                //
-                // const data = res.map((episode: any) => {
-                //     console.log(typeof episode.season, episode.season);
-                //     return {
-                //         x: 7,
-                //         y: episode.rating,
-                //         color: colors[episode.season - 1] || '#f00'
-                //     }
-                // });
-                let ct = 0;
-                const seasonMap: any = {};
-                res.forEach((episode: any) => {
-                    if (!seasonMap[episode.season]) {
-                        seasonMap[episode.season] = [];
+                if (res && Object.keys(res).length) {
+                    for (let i = self.currentSeasons; i >= 0; i--) {
+                        self.chart.removeSerie(i);
                     }
-                    seasonMap[episode.season].push(episode);
-                });
-                self.currentSeasons = Object.keys(seasonMap).length;
-
-                Object.keys(seasonMap).forEach((season: any) => {
-                    console.log('season', season);
-                    const data = seasonMap[season].map((episode) => {
-                        episode.seriesNumber = self.formatSeriesNumber(episode);
-                        return  {
-                            x: ++ct,
-                            y: episode.rating,
-                            color: colors[season],
-                            episode: episode
+                    if (res.length) {
+                        self.chart.ref.setTitle({text: res[0].name});
+                    }
+                    let ct = 0;
+                    const seasonMap: any = {};
+                    res.forEach((episode: any) => {
+                        if (!seasonMap[episode.season]) {
+                            seasonMap[episode.season] = [];
                         }
+                        seasonMap[episode.season].push(episode);
                     });
-                    self.chart.addSerie({
-                        name: `Season ${season}`,
-                        data: data,
-                        marker: {
-                            // fillColor: colors[season] || '#f00',
-                            fillColor: self.findColor(season - 1),
-                            symbol: 'circle'
-                        },
-                        // tooltip: {
-                        //     headerFormat: 'meow'
-                        // }
-                        // tooltip: {
-                        //     formatter: function() {
-                        //         return '';
-                        //     }
-                        // }
+                    self.currentSeasons = Object.keys(seasonMap).length;
+                    this.zoomYAxis = false;
+                    this.chart.ref.yAxis[0].setExtremes(0, 10, true, true);
+
+                    Object.keys(seasonMap).forEach((season: any) => {
+                        const data = seasonMap[season].map((episode) => {
+                            episode.seriesNumber = self.formatSeriesNumber(episode);
+                            return {
+                                x: ++ct,
+                                y: episode.rating,
+                                episode: episode
+                            }
+                        });
+                        self.chart.addSerie({
+                            name: `Season ${season}`,
+                            data: data,
+                            marker: {
+                                fillColor: self.findColor(season - 1),
+                                symbol: 'circle'
+                            }
+                        });
                     });
-                });
-                // console.log('data', data);
-                // this.chart.addSerie({
-                //     name: 'Stuff',
-                //     data: data,
-                //     marker: {
-                //         symbol: 'circle'
-                //     }
-                // });
-
-
-
-
-
-
-
-
-                // this.chart.addSerie({name: this.title, data: data});
-                console.log('seasonMap', seasonMap);
+                }
             }, (err: any) => {
                 console.log('err', err);
             });
