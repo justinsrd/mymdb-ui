@@ -9,7 +9,7 @@ csv.field_size_limit(sys.maxsize)
 start = int(time.time() * 1000)
 
 
-def save_data_to_db(unique_showz, unique_episodez):
+def save_data_to_db(shows, episodes):
     try:
         db_name = os.environ['db_name']
         db_user = os.environ['db_user']
@@ -20,7 +20,7 @@ def save_data_to_db(unique_showz, unique_episodez):
         cur = conn.cursor()
 
         shows_query = ''
-        for key, val in unique_showz.iteritems():
+        for key, val in shows.iteritems():
             shows_query += val['title'] + '\t' + val['show_id'] + '\n'
 
         show_data = StringIO(shows_query)
@@ -28,19 +28,20 @@ def save_data_to_db(unique_showz, unique_episodez):
         conn.commit()
 
         episodes_query = ''
-        for key, val in unique_episodez.iteritems():
+        for key, val in episodes.iteritems():
             episodes_query += val['show_id'] + '\t' + val['episode_id'] + '\t' + val['title'] + '\t' + str(val['season']) + '\t' + str(val['episode']) + '\t' + str(val['rating']) + '\t' + str(val['votes']) + '\n'
 
         episode_data = StringIO(episodes_query)
         cur.copy_from(episode_data, 'episode', null='\N', columns=('show_id', 'episode_id', 'episode_title', 'season', 'episode', 'rating', 'votes'))
         conn.commit()
+
     except Exception as e:
-        print "ERROR SAVING TO DB: " + str(e)
+        print 'Error saving to DB: ' + str(e)
 
 
 def main():
     with open("title.akas.tsv") as titles:
-        all_titles = csv.reader(titles, delimiter="\t", quotechar='"')
+        all_titles = csv.reader(titles, delimiter=chr(181), quotechar='"') # use rare delimeter char so episode titles are not split
         with open("title.episode.tsv") as episodes:
             all_episodes = csv.reader(episodes, delimiter="\t", quotechar='"')
             with open("title.ratings.tsv") as ratings:
@@ -58,30 +59,59 @@ def main():
                                 'id': episode_id,
                                 'title': row[2]
                             }
-
-                    for row in all_titles:
-                        # if row[0] in shows:
-                        if row[0] not in unique_shows:
-                            if '"' not in row[2]:
+                    title_parse_errors = 0
+                    for index, row in enumerate(all_titles):
+                        try:
+                            row = row[0].replace('"', '').split('\t')
+                            row[2].decode('utf-8') # error out if episode title is not utf-8 (causes db copy errors)
+                            if row[0] not in unique_shows:
+                                if '"' not in row[2]:
+                                    unique_shows[row[0]] = {
+                                        'title': row[2],
+                                        'show_id': row[0],
+                                        'has_episodes': False,
+                                        'row_info': row
+                                    }
+                            elif row[3] == 'US' and row[5] == 'imdbDisplay':
                                 unique_shows[row[0]] = {
                                     'title': row[2],
                                     'show_id': row[0],
                                     'has_episodes': False,
                                     'row_info': row
                                 }
-                        else:
-                            if row[1] == '1' and row[3] == 'US' and ('"' not in row[2]):
-                                unique_shows[row[0]]['title'] = row[2]
-                            elif row[7] == '1' and unique_shows[row[0]]['row_info'][1] != '1' and unique_shows[row[0]]['row_info'][3] != 'US' and ('"' not in row[2]):
-                                unique_shows[row[0]]['title'] = row[2]
-                            elif row[3] == 'US' and unique_shows[row[0]]['row_info'][3] == 'US' and int(row[1]) < int(unique_shows[row[0]]['row_info'][1]):
-                                unique_shows[row[0]]['title'] = row[2]
-                            # if row[1] == '1' and row[3] == 'US' and ('"' not in row[2]):
-                            #     unique_shows[row[0]]['title'] = row[0]
-                            # if row[7] == '1' and unique_shows[row[0]]['row_info'][1] != '1' and unique_shows[row[0]]['row_info'][3] != 'US' and ('"' not in row[2]):
-                            #     unique_shows[row[0]]['title'] = row[0]
 
-
+                            elif row[5] == 'original' and (unique_shows[row[0]]['row_info'][3] != 'US' and unique_shows[row[0]]['row_info'][5] != 'imdbDisplay'):
+                                unique_shows[row[0]] = {
+                                    'title': row[2],
+                                    'show_id': row[0],
+                                    'has_episodes': False,
+                                    'row_info': row
+                                }
+                            elif not (unique_shows[row[0]]['row_info'][3] == 'US' and unique_shows[row[0]]['row_info'][5] == 'imdbDisplay') and unique_shows[row[0]]['row_info'][5] != 'original':
+                                if row[1] == '1' and row[3] == 'US' and ('"' not in row[2]):
+                                    unique_shows[row[0]] = {
+                                    'title': row[2],
+                                    'show_id': row[0],
+                                    'has_episodes': False,
+                                    'row_info': row
+                                }
+                                elif row[7] == '1' and unique_shows[row[0]]['row_info'][1] != '1' and unique_shows[row[0]]['row_info'][3] != 'US' and ('"' not in row[2]):
+                                    unique_shows[row[0]] = {
+                                    'title': row[2],
+                                    'show_id': row[0],
+                                    'has_episodes': False,
+                                    'row_info': row
+                                }
+                                elif row[3] == 'US' and unique_shows[row[0]]['row_info'][3] == 'US' and int(row[1]) < int(unique_shows[row[0]]['row_info'][1]):
+                                    unique_shows[row[0]] = {
+                                    'title': row[2],
+                                    'show_id': row[0],
+                                    'has_episodes': False,
+                                    'row_info': row
+                                }
+                        except Exception as e:
+                            title_parse_errors += 1
+                    print 'Number of errors: ' + str(title_parse_errors)
                     for row in all_episodes:
                         show_id = row[1]
                         episode_id = row[0]
@@ -115,7 +145,7 @@ def main():
                             list_of_shows_to_delete.append(show_id)
                     for show_id in list_of_shows_to_delete:
                         del unique_shows[show_id]
-                    print '3 - UPDATED unique_shows: ' + str(len(unique_shows.keys()))
+                    print '3 - UPDATED unique_shows WITH EPISODES: ' + str(len(unique_shows.keys()))
 
 
                     save_data_to_db(unique_shows, unique_episodes)
