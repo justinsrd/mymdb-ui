@@ -1,5 +1,8 @@
 <div [chart]="chart"></div>
 
 
-<input [(ngModel)]="title">
+<input [(ngModel)]="title" (keydown.enter)="fetchStuff()">
 <button (click)="fetchStuff()">GO</button>
+
+
+<button (click)="switchy()">Switchy</button>
