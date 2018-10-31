@@ -12,9 +12,9 @@ api = Api(app)
 
 class MyApp(Resource):
     def get(self):
-        print request.args
+        print(request.args)
         title = request.args['title'].replace('\'', '\'\'').lower()
-        print title
+        print(title)
         try:
             db_name = os.environ['db_name']
             db_user = os.environ['db_user']
@@ -25,17 +25,17 @@ class MyApp(Resource):
             cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
             query = 'select * from show join episode on show.imdb_id = episode.show_id where LOWER(show.name) = \'%s\' and rating is not null order by episode.season asc, episode.episode asc;' % (title)
-            print query
+            print(query)
 
             cur.execute(query)
             res = cur.fetchall()
-            print '\n\n\nres:::\n'
-            print res
-            print '\n\n\n'
+            print('\n\n\nres:::\n')
+            print(res)
+            print('\n\n\n')
 
             return res
         except Exception as e:
-            print "ERROR SAVING TO DB: " + str(e)
+            print("ERROR FETCHING FROM DB: " + str(e))
             return {}
 
     def post(self):
