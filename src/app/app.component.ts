@@ -10,6 +10,7 @@ import {MyServiceService} from './my-service.service';
 })
 export class AppComponent {
     public title: string = 'Community';
+    public imdbId: string = 'tt0386676';
     private currentSeasons: number;
     private zoomYAxis: boolean = false;
     public chart: any = new Chart({
@@ -24,8 +25,8 @@ export class AppComponent {
         },
         yAxis: {
             gridLineColor: '#424242',
-            min: 0,
-            max: 10
+            // min: 0,
+            // max: 10
         },
         legend: {
             enabled: false
@@ -61,7 +62,7 @@ export class AppComponent {
     }
 
     findColor(index: number) {
-        const colors = ['#7ed1f0', '#f1ef85', '#cb78ed', '#7ff2ad', '#ef857c', '#7b8eed', '#b5f284', '#f079d3', '#80f2ea'];
+        const colors = ['#7ed1f0', '#f1ef85', '#cb78ed', '#7ff2ad', '#ef857c', '#80f2ea', '#7b8eed', '#b5f284', '#f079d3'];
         while (index > colors.length) {
             index -= colors.length;
         }
@@ -97,46 +98,71 @@ export class AppComponent {
         if (this.title) {
             this.myServiceService.getData(this.title).subscribe((res: any) => {
                 if (res && Object.keys(res).length) {
-                    for (let i = self.currentSeasons; i >= 0; i--) {
-                        self.chart.removeSerie(i);
+                    if (res && Object.keys(res).length) {
+                        self.renderChart(res);
                     }
-                    if (res.length) {
-                        self.chart.ref.setTitle({text: res[0].name});
-                    }
-                    let ct = 0;
-                    const seasonMap: any = {};
-                    res.forEach((episode: any) => {
-                        if (!seasonMap[episode.season]) {
-                            seasonMap[episode.season] = [];
-                        }
-                        seasonMap[episode.season].push(episode);
-                    });
-                    self.currentSeasons = Object.keys(seasonMap).length;
-                    this.zoomYAxis = false;
-                    this.chart.ref.yAxis[0].setExtremes(0, 10, true, true);
-
-                    Object.keys(seasonMap).forEach((season: any) => {
-                        const data = seasonMap[season].map((episode) => {
-                            episode.seriesNumber = self.formatSeriesNumber(episode);
-                            return {
-                                x: ++ct,
-                                y: episode.rating,
-                                episode: episode
-                            }
-                        });
-                        self.chart.addSerie({
-                            name: `Season ${season}`,
-                            data: data,
-                            marker: {
-                                fillColor: self.findColor(season - 1),
-                                symbol: 'circle'
-                            }
-                        });
-                    });
                 }
             }, (err: any) => {
                 console.log('err', err);
             });
         }
+    }
+
+
+
+
+
+
+    fetchStuffByImdbId(): void {
+        const self = this;
+        if (this.imdbId) {
+            this.myServiceService.getDataByImdbId(this.imdbId).subscribe((res: any) => {
+                if (res && Object.keys(res).length) {
+                    self.renderChart(res);
+                }
+            }, (err: any) => {
+                console.log('err', err);
+            });
+        }
+    }
+
+    renderChart(data): void {
+        const self = this;
+        for (let i = self.currentSeasons; i >= 0; i--) {
+            self.chart.removeSerie(i);
+        }
+        if (data.length) {
+            self.chart.ref.setTitle({text: data[0].name});
+        }
+        let ct = 0;
+        const seasonMap: any = {};
+        data.forEach((episode: any) => {
+            if (!seasonMap[episode.season]) {
+                seasonMap[episode.season] = [];
+            }
+            seasonMap[episode.season].push(episode);
+        });
+        self.currentSeasons = Object.keys(seasonMap).length;
+        // this.zoomYAxis = false;
+        // this.chart.ref.yAxis[0].setExtremes(0, 10, true, true);
+
+        Object.keys(seasonMap).forEach((season: any) => {
+            const data = seasonMap[season].map((episode) => {
+                episode.seriesNumber = self.formatSeriesNumber(episode);
+                return {
+                    x: ++ct,
+                    y: episode.rating,
+                    episode: episode
+                }
+            });
+            self.chart.addSerie({
+                name: `Season ${season}`,
+                data: data,
+                marker: {
+                    fillColor: self.findColor(season - 1),
+                    symbol: 'circle'
+                }
+            });
+        });
     }
 }

@@ -20,4 +20,15 @@ export class MyServiceService {
         });
         return this.http.get(url, {params: params});
     }
+
+    getDataByImdbId(imdbId: string) {
+        const url = 'http://localhost:5000';
+
+        const params: any = new HttpParams({
+            fromObject: {
+                imdb_id: imdbId
+            }
+        });
+        return this.http.get(url, {params: params});
+    }
 }
