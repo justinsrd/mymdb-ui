@@ -13,8 +13,13 @@ api = Api(app)
 class MyApp(Resource):
     def get(self):
         print(request.args)
-        title = request.args['title'].replace('\'', '\'\'').lower()
-        print(title)
+        title = None
+        imdb_id = None
+        if request.args.get('title'):
+            title = request.args['title'].replace('\'', '\'\'').lower()
+        elif request.args.get('imdb_id'):
+            imdb_id = request.args['imdb_id']
+
         try:
             db_name = os.environ['db_name']
             db_user = os.environ['db_user']
@@ -24,7 +29,11 @@ class MyApp(Resource):
             conn = psycopg2.connect(credentials)
             cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-            query = 'select * from show join episode on show.imdb_id = episode.show_id where LOWER(show.name) = \'%s\' and rating is not null order by episode.season asc, episode.episode asc;' % (title)
+            query = None
+            if title is not None:
+                query = 'select * from show join episode on show.imdb_id = episode.show_id where LOWER(show.name) = \'%s\' and rating is not null order by episode.season asc, episode.episode asc;' % (title)
+            elif imdb_id is not None:
+                query = 'select * from show join episode on show.imdb_id = episode.show_id where show.imdb_id = \'%s\' and rating is not null order by episode.season asc, episode.episode asc;' % (imdb_id)
             print(query)
 
             cur.execute(query)

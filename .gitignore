@@ -1,3 +1,7 @@
-venv
+venv*
 .idea
 .env*
+title*.tsv
+.DS_Store
+__pycache__/
+*.pyc
