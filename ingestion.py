@@ -8,6 +8,9 @@ from io import StringIO
 csv.field_size_limit(sys.maxsize)
 start = int(time.time() * 1000)
 
+if not os.environ.get('db_name'):
+    raise EnvironmentError('Please set environment variables')
+
 
 def save_data_to_db(shows, episodes):
     try:
@@ -18,6 +21,10 @@ def save_data_to_db(shows, episodes):
         credentials = "dbname=%s user=%s host=%s password=%s" % (db_name, db_user, db_host, db_pass)
         conn = psycopg2.connect(credentials)
         cur = conn.cursor()
+
+        cur.execute('TRUNCATE episode; DELETE from episode;')
+        cur.execute('TRUNCATE show; DELETE from show;')
+        conn.commit()
 
         shows_query = ''
         for key, val in shows.items():
