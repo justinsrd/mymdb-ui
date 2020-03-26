@@ -97,6 +97,7 @@ export class AppComponent {
         const self = this;
         if (this.title) {
             this.myServiceService.getData(this.title).subscribe((res: any) => {
+                res = res.show_data;
                 if (res && Object.keys(res).length) {
                     if (res && Object.keys(res).length) {
                         self.renderChart(res);
@@ -117,6 +118,7 @@ export class AppComponent {
         const self = this;
         if (this.imdbId) {
             this.myServiceService.getDataByImdbId(this.imdbId).subscribe((res: any) => {
+                res = res.show_data;
                 if (res && Object.keys(res).length) {
                     self.renderChart(res);
                 }

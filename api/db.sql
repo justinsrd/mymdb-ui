@@ -1,7 +1,8 @@
 CREATE TABLE show (
     id BIGSERIAL PRIMARY KEY,
     name text,
-    imdb_id text
+    imdb_id text,
+    poster_url text
 );
 
 CREATE TABLE episode (
