@@ -109,7 +109,7 @@ def main():
                             unique_episodes[episode_id] = {
                                 'show_id': show_id,
                                 'episode_id': episode_id,
-                                'title': unique_episode_titles[episode_id],
+                                'title': unique_episode_titles.get(episode_id) or "unknown",
                                 'season': int(row[2]),
                                 'episode': int(row[3]),
                                 'rating': r'\N',
