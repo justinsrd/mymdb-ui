@@ -1,8 +1,22 @@
+overall_start=$(date +%s)
+
 rm -r title*
 echo 'Removed old data files'
 source .env.local
 echo 'Sourced environment variables'
+
+download_files_start=$(date +%s)
 python3 setup.py
-echo 'Downloaded new data files'
+download_files_end=$(date +%s)
+echo 'Downloaded new data files --' $((download_files_end-download_files_start)) 'seconds'
+
+ingestion_start=$(date +%s)
 python3 ingestion.py
-echo 'Add files to database'
+ingestion_end=$(date +%s)
+echo 'Add files to database -- ' $((ingestion_end-ingestion_start)) 'seconds'
+
+
+overall_end=$(date +%s)
+echo 'Overall took' $((overall_end-overall_start)) 'seconds'
+
+
