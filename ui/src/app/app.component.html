@@ -5,8 +5,16 @@
 <button (click)="fetchStuff()">GO</button>
 
 <br><br>
-<input [(ngModel)]="imdbId" (keydown.enter)="fetchStuffByImdbId()">
-<button (click)="fetchStuffByImdbId()">GO</button>
+<input [(ngModel)]="imdbId" (keydown.enter)="fetchStuffByImdbId(imdbId)">
+<button (click)="fetchStuffByImdbId(imdbId)">GO</button>
 
 
 <!--<button (click)="switchy()">Switchy</button>-->
+
+
+<div *ngIf="recents && recents.length" style="margin-top: 2rem;">
+    <div *ngFor="let show of recents" style="display: inline-block; margin-right: 1rem;">
+        <img [src]="show.poster_url" (click)="fetchViaPoster(show.show_id)"/>
+        <div>{{show.show_name}}</div>
+    </div>
+</div>

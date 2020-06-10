@@ -39,6 +39,7 @@ class MyApp(Resource):
         title = None
         imdb_id = None
         show_id = None
+        show_name = None
         if request.args.get('title'):
             title = request.args['title'].replace('\'', '\'\'').lower()
         elif request.args.get('imdb_id'):
@@ -55,13 +56,14 @@ class MyApp(Resource):
             res['show_data'] = cur.fetchall()
 
             if len(res['show_data']) > 0:
+                show_name = res['show_data'][0]['name']
                 show_id = res['show_data'][0]['imdb_id']
         except Exception as e:
             print('ERROR FETCHING FROM DB: ' + str(e))
             return {'error': 'DB Fetch Error'}
 
         img_url = None
-        if show_id is not None and res['show_data'][0]['poster_url'] is None:
+        if show_name is not None and res['show_data'][0]['poster_url'] is None:
             try:
                 # if show does not have poster
                 # scrape imdb for poster url
@@ -79,17 +81,18 @@ class MyApp(Resource):
             except Exception as e:
                 print('ERROR OPERATING WITH SCRAPER: ' + str(e))
                 return {'error': 'Poster Scraper Error'}
-        elif show_id is not None and res['show_data'][0]['poster_url'] is not None:
+        elif show_name is not None and res['show_data'][0]['poster_url'] is not None:
             img_url = res['show_data'][0]['poster_url']
 
         # remove previous instances of show & poster from list
         # add show & poster to beginning of list
         # get entire list (0 - 15)
         # add to response
-        if img_url is not None and show_id is not None:
+        if img_url is not None and show_name is not None and show_id is not None:
             try:
                 s = json.dumps({
                     'show_id': show_id,
+                    'show_name': show_name,
                     'poster_url': img_url
                 })
                 r.lrem(LIST_NAME, 0, s)
@@ -102,10 +105,17 @@ class MyApp(Resource):
                 print('ERROR OPERATING WITH REDIS: ' + str(e))
                 return {'error': 'Redis Error'}
         else:
-            print('Unable to find show_id or img_url')
+            print('Unable to find show_name or img_url')
 
         return res
 
+    def post(self):
+        try:
+            d = r.lrange(LIST_NAME, 0, 15)
+            return d
+        except Exception as e:
+            print('ERROR OPERATING WITH REDIS: ' + str(e))
+            return {'error': 'Redis Error'}
 
 api.add_resource(MyApp, '/q')
 

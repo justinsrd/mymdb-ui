@@ -28,4 +28,8 @@ export class MyServiceService {
         });
         return this.http.get(environment.mymdbApiDomain, {params: params});
     }
+
+    getRecentsOnly() {
+        return this.http.post(environment.mymdbApiDomain, {});
+    }
 }

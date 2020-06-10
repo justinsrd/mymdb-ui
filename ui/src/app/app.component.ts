@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import {Chart} from 'angular-highcharts';
 import {MyServiceService} from './my-service.service';
 
@@ -8,11 +8,12 @@ import {MyServiceService} from './my-service.service';
     styleUrls: ['./app.component.scss'],
     providers: [MyServiceService]
 })
-export class AppComponent {
-    public title: string = 'Community';
-    public imdbId: string = 'tt0386676';
+export class AppComponent implements OnInit{
+    public title = 'Community';
+    public imdbId = 'tt0386676';
+    public recents: Array<{show_id: string, show_name: string, poster_url: string}>;
     private currentSeasons: number;
-    private zoomYAxis: boolean = false;
+    private zoomYAxis = false;
     public chart: any = new Chart({
         chart: {
             type: 'scatter',
@@ -61,6 +62,10 @@ export class AppComponent {
 
     }
 
+    ngOnInit(): void {
+        this.fetchRecentsOnly();
+    }
+
     findColor(index: number) {
         const colors = ['#7ed1f0', '#f1ef85', '#cb78ed', '#7ff2ad', '#ef857c', '#80f2ea', '#7b8eed', '#b5f284', '#f079d3'];
         while (index > colors.length) {
@@ -97,11 +102,11 @@ export class AppComponent {
         const self = this;
         if (this.title) {
             this.myServiceService.getData(this.title).subscribe((res: any) => {
-                res = res.show_data;
-                if (res && Object.keys(res).length) {
-                    if (res && Object.keys(res).length) {
-                        self.renderChart(res);
-                    }
+                if (res.show_data && res.show_data.length) {
+                    self.renderChart(res.show_data);
+                }
+                if (res.recents) {
+                    this.recents = res.recents.map(i => JSON.parse(i));
                 }
             }, (err: any) => {
                 console.log('err', err);
@@ -109,23 +114,33 @@ export class AppComponent {
         }
     }
 
-
-
-
-
-
-    fetchStuffByImdbId(): void {
+    fetchStuffByImdbId(imdbId: string): void {
         const self = this;
-        if (this.imdbId) {
-            this.myServiceService.getDataByImdbId(this.imdbId).subscribe((res: any) => {
-                res = res.show_data;
-                if (res && Object.keys(res).length) {
-                    self.renderChart(res);
+        if (imdbId) {
+            this.myServiceService.getDataByImdbId(imdbId).subscribe((res: any) => {
+                if (res.show_data && res.show_data.length) {
+                    self.renderChart(res.show_data);
+                }
+                if (res.recents) {
+                    this.recents = res.recents.map(i => JSON.parse(i));
                 }
             }, (err: any) => {
                 console.log('err', err);
             });
         }
+    }
+
+    fetchViaPoster(imdbId: string): void {
+        this.imdbId = imdbId;
+        this.fetchStuffByImdbId(imdbId);
+    }
+
+    fetchRecentsOnly(): void {
+        this.myServiceService.getRecentsOnly().subscribe((res: any) => {
+            this.recents = res.map(i => JSON.parse(i));
+        }, (err) => {
+            console.log('Error getting recents', err);
+        });
     }
 
     renderChart(data): void {
@@ -149,17 +164,17 @@ export class AppComponent {
         // this.chart.ref.yAxis[0].setExtremes(0, 10, true, true);
 
         Object.keys(seasonMap).forEach((season: any) => {
-            const data = seasonMap[season].map((episode) => {
+            const showChartData = seasonMap[season].map((episode) => {
                 episode.seriesNumber = self.formatSeriesNumber(episode);
                 return {
                     x: ++ct,
                     y: episode.rating,
                     episode: episode
-                }
+                };
             });
             self.chart.addSerie({
                 name: `Season ${season}`,
-                data: data,
+                data: showChartData,
                 marker: {
                     fillColor: self.findColor(season - 1),
                     symbol: 'circle'
