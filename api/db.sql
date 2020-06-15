@@ -1,8 +1,7 @@
 CREATE TABLE show (
     id BIGSERIAL,
     name text,
-    imdb_id text PRIMARY KEY,
-    poster_url text
+    imdb_id text PRIMARY KEY
 );
 
 CREATE TABLE episode (
@@ -16,6 +15,8 @@ CREATE TABLE episode (
     votes integer
 );
 
-
-CREATE UNIQUE INDEX IF NOT EXISTS show_pkey ON show(imdb_id);
-CREATE UNIQUE INDEX IF NOT EXISTS episode_pkey ON episode(id);
+CREATE TABLE poster (
+    id BIGSERIAL,
+    show_id text PRIMARY KEY,
+    poster_url text
+);
