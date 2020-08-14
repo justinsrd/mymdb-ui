@@ -8,17 +8,21 @@ import {MyServiceService} from './my-service.service';
     styleUrls: ['./app.component.scss'],
     providers: [MyServiceService]
 })
-export class AppComponent implements OnInit{
-    public title = 'Community';
-    public imdbId = 'tt0386676';
+export class AppComponent implements OnInit {
+    public searchMode = 'name';
+    public searchText = '';
+    public dataFetchInProgress = false;
     public recents: Array<{show_id: string, show_name: string, poster_url: string}>;
     private currentSeasons: number;
     private zoomYAxis = false;
+    public errorMessage: string = null;
+    public allShowData: any[];
+    public showSeasonsLengthArr: any[];
     public chart: any = new Chart({
         chart: {
             type: 'scatter',
             animation: true,
-            backgroundColor: '#333333'
+            backgroundColor: '#142e45'
         },
         xAxis: {
             visible: false,
@@ -50,7 +54,9 @@ export class AppComponent implements OnInit{
                     <div class="tooltip-container">
                         <p class="episode-title font-weight-bold">${episode.episode_title}</p>
                         <p class="episode-number">${episode.seriesNumber}</p>
-                        <p class="episode-rating">Rating: <span class="value font-weight-bold">${Number(episode.rating).toFixed(1)}</span></p>
+                        <p class="episode-rating">
+                            Rating: <span class="value font-weight-bold">${Number(episode.rating).toFixed(1)}</span>
+                        </p>
                         <p class="episode-votes">Votes: </span class="value">${episode.votes}</span></p>
                     </div>
                 `;
@@ -97,42 +103,71 @@ export class AppComponent implements OnInit{
         }
     }
 
+    changeSeason(e) {
+        const filter = e.target.value;
+        if (filter === 'all') {
+            this.renderChart(this.allShowData);
+        } else {
+            this.renderChart(this.allShowData.filter(episode => episode.season === Number(filter)));
+        }
+    }
 
-    fetchStuff() {
+    fetchData() {
+        if (this.searchMode === 'name') {
+            this.fetchByName(this.searchText);
+        } else if (this.searchMode === 'id') {
+            this.fetchByShowId(this.searchText);
+        }
+    }
+
+    fetchByName(showName) {
         const self = this;
-        if (this.title) {
-            this.myServiceService.getData(this.title).subscribe((res: any) => {
+        if (showName) {
+            this.dataFetchInProgress = true;
+            this.myServiceService.getData(showName).subscribe((res: any) => {
                 if (res.show_data && res.show_data.length) {
-                    self.renderChart(res.show_data);
+                    self.allShowData = res.show_data;
+                    self.renderChart(self.allShowData, true);
+                } else if (res.show_data && res.show_data.length === 0) {
+                    this.errorMessage = 'Show not found';
                 }
                 if (res.recents) {
                     this.recents = res.recents.map(i => JSON.parse(i));
                 }
+                this.dataFetchInProgress = false;
             }, (err: any) => {
-                console.log('err', err);
+                this.errorMessage = err;
+                this.dataFetchInProgress = false;
             });
         }
     }
 
-    fetchStuffByImdbId(imdbId: string): void {
+    fetchByShowId(showId: string): void {
         const self = this;
-        if (imdbId) {
-            this.myServiceService.getDataByImdbId(imdbId).subscribe((res: any) => {
+        if (showId) {
+            this.dataFetchInProgress = true;
+            this.myServiceService.getDataByImdbId(showId).subscribe((res: any) => {
                 if (res.show_data && res.show_data.length) {
-                    self.renderChart(res.show_data);
+                    self.allShowData = res.show_data;
+                    self.renderChart(self.allShowData, true);
+                } else if (res.show_data && res.show_data.length === 0) {
+                    this.errorMessage = 'Show not found';
                 }
                 if (res.recents) {
                     this.recents = res.recents.map(i => JSON.parse(i));
                 }
+                this.dataFetchInProgress = false;
             }, (err: any) => {
-                console.log('err', err);
+                this.errorMessage = err;
+                this.dataFetchInProgress = false;
             });
         }
     }
 
-    fetchViaPoster(imdbId: string): void {
-        this.imdbId = imdbId;
-        this.fetchStuffByImdbId(imdbId);
+    fetchViaPoster(showId: string): void {
+        this.searchMode = 'id';
+        this.searchText = showId;
+        this.fetchByShowId(showId);
     }
 
     fetchRecentsOnly(): void {
@@ -143,7 +178,7 @@ export class AppComponent implements OnInit{
         });
     }
 
-    renderChart(data): void {
+    renderChart(data, firstRender?: boolean): void {
         const self = this;
         for (let i = self.currentSeasons; i >= 0; i--) {
             self.chart.removeSerie(i);
@@ -160,6 +195,9 @@ export class AppComponent implements OnInit{
             seasonMap[episode.season].push(episode);
         });
         self.currentSeasons = Object.keys(seasonMap).length;
+        if (firstRender) {
+            self.showSeasonsLengthArr = Array(Object.keys(seasonMap).length);
+        }
         // this.zoomYAxis = false;
         // this.chart.ref.yAxis[0].setExtremes(0, 10, true, true);
 

@@ -1,20 +1,49 @@
+<header style="display: flex; justify-content: space-between; align-items: center;">
+    <div style="margin-left: .5rem;" class="fancy-font fancy-red">
+        <i class="fa fa-play-circle"></i> MyMDB
+    </div>
+    <div class="fancy-font fancy-red" style="margin-right: .5rem; position:relative;">
+        <select [(ngModel)]="searchMode" class="search-mode-select" style="margin-right: .25rem;" (ngModelChange)="searchText = '';">
+            <option value="name">Name</option>
+            <option value="id">IMDB ID</option>
+        </select>
+        <input placeholder="Search"
+               [disabled]="dataFetchInProgress"
+               [(ngModel)]="searchText"
+               [ngClass]="{'disabled-opacity': dataFetchInProgress}"
+               (keydown.enter)="fetchData()"
+               class="search-input" style="margin-right: .25rem;"/>
+        <i *ngIf="!dataFetchInProgress" (click)="fetchData()" class="fa fa-search cursor-pointer"></i>
+        <i *ngIf="dataFetchInProgress" (click)="fetchData()" class="fa fa-circle-o-notch fa-spin cursor-pointer"></i>
+        <div class="error-message" *ngIf="errorMessage">
+            <div class="carrot"></div>
+            <i class="fa fa-times close-button cursor-pointer" aria-hidden="true" (click)="errorMessage = null;"></i>
+            {{errorMessage}}
+        </div>
+    </div>
+</header>
+
 <div [chart]="chart"></div>
-
-
-<input [(ngModel)]="title" (keydown.enter)="fetchStuff()">
-<button (click)="fetchStuff()">GO</button>
-
-<br><br>
-<input [(ngModel)]="imdbId" (keydown.enter)="fetchStuffByImdbId(imdbId)">
-<button (click)="fetchStuffByImdbId(imdbId)">GO</button>
+<div class="chart-footer">
+    <div class="season-filter-section" style="margin-right: .25rem;" *ngIf="chart && chart.ref.series && chart.ref.series.length">
+        <select class="search-mode-select" (change)="changeSeason($event);">
+            <option value="all">All</option>
+            <option *ngFor="let season of showSeasonsLengthArr; let i = index;" [value]="i + 1">Season {{i+1}}</option>
+        </select>
+    </div>
+</div>
 
 
 <!--<button (click)="switchy()">Switchy</button>-->
 
 
-<div *ngIf="recents && recents.length" style="margin-top: 2rem;">
-    <div *ngFor="let show of recents" style="display: inline-block; margin-right: 1rem;">
-        <img [src]="show.poster_url" (click)="fetchViaPoster(show.show_id)"/>
-        <div>{{show.show_name}}</div>
+<section *ngIf="recents && recents.length" class="recents-section">
+    <div class="recents-section-title">Recents:</div>
+    <div *ngFor="let show of recents" class="recents-poster" (click)="fetchViaPoster(show.show_id)">
+        <img [src]="show.poster_url" class="cursor-pointer"/>
+        <div class="poster-title-overlay cursor-pointer"></div>
+        <div class="poster-title cursor-pointer">
+            {{show.show_name}}
+        </div>
     </div>
-</div>
+</section>
