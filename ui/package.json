@@ -23,7 +23,7 @@
     "angular-highcharts": "^6.2.6",
     "core-js": "^2.5.4",
     "font-awesome": "4.7.0",
-    "highcharts": "^6.1.4",
+    "highcharts": "^7.2.2",
     "rxjs": "~6.2.0",
     "zone.js": "~0.8.26"
   },
