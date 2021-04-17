@@ -6,7 +6,7 @@ import psycopg2
 import psycopg2.extras
 from psycopg2 import pool
 from flask import Flask, request
-from flask_restful import Resource, Api
+from flask_restful import Resource, Api, abort
 from flask_cors import CORS
 from bs4 import BeautifulSoup
 
@@ -57,7 +57,7 @@ class MyApp(Resource):
 
         # for anyone tryna sql inject
         if (title is not None and ';' in title) or (imdb_id is not None and ';' in imdb_id):
-            return {'error': 'Plz don\'t hack me bro'}
+            abort(400, error='Plz don\'t hack me bro')
 
         try:
             ps_connection = postgresql_pool.getconn()
