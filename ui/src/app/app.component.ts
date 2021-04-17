@@ -42,6 +42,15 @@ export class AppComponent implements OnInit {
                 color: '#fff'
             }
         },
+        plotOptions: {
+            series: {
+                states: {
+                    inactive: {
+                        opacity: 1
+                    }
+                }
+            }
+        },
         credits: {
             enabled: false
         },
@@ -49,7 +58,7 @@ export class AppComponent implements OnInit {
         tooltip: {
             useHTML: true,
             formatter: function() {
-                const episode = this.point.episode;
+                const episode = this.point['episode'];
                 return `
                     <div class="tooltip-container">
                         <p class="episode-title font-weight-bold">${episode.episode_title}</p>
@@ -181,7 +190,7 @@ export class AppComponent implements OnInit {
     renderChart(data, firstRender?: boolean): void {
         const self = this;
         for (let i = self.currentSeasons; i >= 0; i--) {
-            self.chart.removeSerie(i);
+            self.chart.removeSeries(i);
         }
         if (data.length) {
             self.chart.ref.setTitle({text: data[0].name});
@@ -210,7 +219,7 @@ export class AppComponent implements OnInit {
                     episode: episode
                 };
             });
-            self.chart.addSerie({
+            self.chart.addSeries({
                 name: `Season ${season}`,
                 data: showChartData,
                 marker: {

@@ -4,7 +4,7 @@ $fancy-lighter-blue-bg: #142e45;
 $light-grey-bg: #dedede;
 $fancy-font: 'Montserrat', sans-serif;
 
-/deep/ {
+::ng-deep {
     .font-weight-bold {
         font-weight: bold !important;
     }
