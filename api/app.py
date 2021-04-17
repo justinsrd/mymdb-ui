@@ -4,7 +4,6 @@ import requests
 import json
 import psycopg2
 import psycopg2.extras
-from psycopg2 import pool
 from flask import Flask, request
 from flask_restful import Resource, Api, abort
 from flask_cors import CORS
@@ -20,8 +19,8 @@ db_name = os.environ['db_name']
 db_user = os.environ['db_user']
 db_host = os.environ['db_host']
 db_pass = os.environ['db_pass']
-# credentials = "dbname=%s user=%s host=%s password=%s" % (db_name, db_user, db_host, db_pass)
-# conn = psycopg2.connect(credentials)
+credentials = "dbname=%s user=%s host=%s password=%s" % (db_name, db_user, db_host, db_pass)
+conn = psycopg2.connect(credentials)
 
 # init redis
 r = redis.StrictRedis(
@@ -32,13 +31,6 @@ r = redis.StrictRedis(
 )
 LIST_NAME = 'mymdb_recents'
 IMDB_URL = 'https://www.imdb.com/title/'
-
-
-try:
-    postgresql_pool = psycopg2.pool.SimpleConnectionPool(1, 15, user=db_user, password=db_pass, host=db_host,
-                                                         port=5432, database=db_name)
-except Exception as e:
-    raise ConnectionError('Unable to connect to database. Credentials may be invalid')
 
 
 class MyApp(Resource):
@@ -60,8 +52,7 @@ class MyApp(Resource):
             abort(400, error='Plz don\'t hack me bro')
 
         try:
-            ps_connection = postgresql_pool.getconn()
-            cur = ps_connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
             query = None
             if title is not None:
                 query = 'select show.name, show.imdb_id, episode.episode_title, episode.season, episode.episode, episode.rating, episode.votes from show join episode on show.imdb_id = episode.show_id where LOWER(show.name) = \'%s\' and rating is not null order by episode.season asc, episode.episode asc;' % (title)
@@ -79,27 +70,26 @@ class MyApp(Resource):
                 poster_data = cur.fetchall()
                 if poster_data is not None and len(poster_data) > 0:
                     img_url = poster_data[0]['poster_url']
-
-                if show_name is not None and img_url is None:
-                    try:
-                        # if show does not have poster
-                        # scrape imdb for poster url
-                        # add poster url to show's db row
-                        page = requests.get(IMDB_URL + show_id)
-                        soup = BeautifulSoup(page.content, 'html.parser')
-                        results = soup.find(class_='poster').find('img')
-                        img_url = results['src']
-
-                        query3 = 'INSERT INTO poster(show_id, poster_url) VALUES (\'%s\', \'%s\');' % (show_id, img_url)
-                        cur.execute(query3)
-                    except Exception as scraper_error:
-                        print('ERROR OPERATING WITH SCRAPER: ' + str(scraper_error))
-                        return {'error': 'Poster Scraper Error'}
-            cur.close()
-            postgresql_pool.putconn(ps_connection)
-        except Exception as db_error:
-            print('ERROR FETCHING FROM DB: ' + str(db_error))
+        except Exception as e:
+            print('ERROR FETCHING FROM DB: ' + str(e))
             return {'error': 'DB Fetch Error'}
+
+        if show_name is not None and img_url is None:
+            try:
+                # if show does not have poster
+                # scrape imdb for poster url
+                # add poster url to show's db row
+                page = requests.get(IMDB_URL + show_id)
+                soup = BeautifulSoup(page.content, 'html.parser')
+                results = soup.find(class_='poster').find('img')
+                img_url = results['src']
+
+                query3 = 'INSERT INTO poster(show_id, poster_url) VALUES (\'%s\', \'%s\');' % (show_id, img_url)
+                cur.execute(query3)
+                conn.commit()
+            except Exception as e:
+                print('ERROR OPERATING WITH SCRAPER: ' + str(e))
+                return {'error': 'Poster Scraper Error'}
 
         # remove previous instances of show & poster from list
         # add show & poster to beginning of list
@@ -134,7 +124,6 @@ class MyApp(Resource):
         except Exception as e:
             print('ERROR OPERATING WITH REDIS: ' + str(e))
             return {'error': 'Redis Error'}
-
 
 api.add_resource(MyApp, '/q')
 
