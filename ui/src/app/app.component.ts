@@ -145,7 +145,7 @@ export class AppComponent implements OnInit {
                 }
                 this.dataFetchInProgress = false;
             }, (err: any) => {
-                this.errorMessage = err;
+                this.errorMessage = err.error || err;
                 this.dataFetchInProgress = false;
             });
         }
@@ -167,7 +167,7 @@ export class AppComponent implements OnInit {
                 }
                 this.dataFetchInProgress = false;
             }, (err: any) => {
-                this.errorMessage = err;
+                this.errorMessage = err.error || err;
                 this.dataFetchInProgress = false;
             });
         }

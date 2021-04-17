@@ -57,7 +57,7 @@ class MyApp(Resource):
 
         # for anyone tryna sql inject
         if (title is not None and ';' in title) or (imdb_id is not None and ';' in imdb_id):
-            return {'error': 'Plz don'/'t hack me bro'}
+            return {'error': 'Plz don\'t hack me bro'}
 
         try:
             ps_connection = postgresql_pool.getconn()
