@@ -79,27 +79,27 @@ class MyApp(Resource):
                 poster_data = cur.fetchall()
                 if poster_data is not None and len(poster_data) > 0:
                     img_url = poster_data[0]['poster_url']
+
+                if show_name is not None and img_url is None:
+                    try:
+                        # if show does not have poster
+                        # scrape imdb for poster url
+                        # add poster url to show's db row
+                        page = requests.get(IMDB_URL + show_id)
+                        soup = BeautifulSoup(page.content, 'html.parser')
+                        results = soup.find(class_='poster').find('img')
+                        img_url = results['src']
+
+                        query3 = 'INSERT INTO poster(show_id, poster_url) VALUES (\'%s\', \'%s\');' % (show_id, img_url)
+                        cur.execute(query3)
+                    except Exception as scraper_error:
+                        print('ERROR OPERATING WITH SCRAPER: ' + str(scraper_error))
+                        return {'error': 'Poster Scraper Error'}
             cur.close()
-        except Exception as e:
-            print('ERROR FETCHING FROM DB: ' + str(e))
+            postgresql_pool.putconn(ps_connection)
+        except Exception as db_error:
+            print('ERROR FETCHING FROM DB: ' + str(db_error))
             return {'error': 'DB Fetch Error'}
-
-        if show_name is not None and img_url is None:
-            try:
-                # if show does not have poster
-                # scrape imdb for poster url
-                # add poster url to show's db row
-                page = requests.get(IMDB_URL + show_id)
-                soup = BeautifulSoup(page.content, 'html.parser')
-                results = soup.find(class_='poster').find('img')
-                img_url = results['src']
-
-                query3 = 'INSERT INTO poster(show_id, poster_url) VALUES (\'%s\', \'%s\');' % (show_id, img_url)
-                cur.execute(query3)
-                conn.commit()
-            except Exception as e:
-                print('ERROR OPERATING WITH SCRAPER: ' + str(e))
-                return {'error': 'Poster Scraper Error'}
 
         # remove previous instances of show & poster from list
         # add show & poster to beginning of list
