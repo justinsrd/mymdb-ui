@@ -18,6 +18,7 @@ export class AppComponent implements OnInit {
     public errorMessage: string = null;
     public allShowData: any[];
     public showSeasonsLengthArr: any[];
+    public selectedSeason = 'all';
     public chart: any = new Chart({
         chart: {
             type: 'scatter',
@@ -197,6 +198,7 @@ export class AppComponent implements OnInit {
         self.currentSeasons = Object.keys(seasonMap).length;
         if (firstRender) {
             self.showSeasonsLengthArr = Array(Object.keys(seasonMap).length);
+            self.selectedSeason = 'all';
         }
         // this.zoomYAxis = false;
         // this.chart.ref.yAxis[0].setExtremes(0, 10, true, true);
