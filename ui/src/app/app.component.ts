@@ -42,15 +42,6 @@ export class AppComponent implements OnInit {
                 color: '#fff'
             }
         },
-        plotOptions: {
-            series: {
-                states: {
-                    inactive: {
-                        opacity: 1
-                    }
-                }
-            }
-        },
         credits: {
             enabled: false
         },
@@ -190,7 +181,7 @@ export class AppComponent implements OnInit {
     renderChart(data, firstRender?: boolean): void {
         const self = this;
         for (let i = self.currentSeasons; i >= 0; i--) {
-            self.chart.removeSeries(i);
+            self.chart.removeSerie(i);
         }
         if (data.length) {
             self.chart.ref.setTitle({text: data[0].name});
@@ -219,7 +210,7 @@ export class AppComponent implements OnInit {
                     episode: episode
                 };
             });
-            self.chart.addSeries({
+            self.chart.addSerie({
                 name: `Season ${season}`,
                 data: showChartData,
                 marker: {
