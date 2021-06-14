@@ -87,7 +87,7 @@ class MyApp(Resource):
                         # add poster url to show's db row
                         page = requests.get(IMDB_URL + show_id)
                         soup = BeautifulSoup(page.content, 'html.parser')
-                        results = soup.find(class_='poster').find('img')
+                        results = soup.find(class_='ipc-image').find('img')
                         img_url = results['src']
 
                         query3 = 'INSERT INTO poster(show_id, poster_url) VALUES (\'%s\', \'%s\');' % (show_id, img_url)
